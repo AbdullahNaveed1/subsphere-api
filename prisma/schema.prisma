@@ -13,7 +13,6 @@ model User {
   passwordHash String
   name         String?
   createdAt    DateTime     @default(now())
-
   memberships  Membership[]
 }
 
@@ -22,10 +21,12 @@ model Organization {
   name      String
   slug      String       @unique
   createdAt DateTime     @default(now())
-
-  memberships   Membership[]
-  subscriptions Subscription[]
-  invoices      Invoice[]
+  memberships     Membership[]
+  subscriptions   Subscription[]
+  invoices        Invoice[]
+  apiKeys         ApiKey[]
+  payments        Payment[]
+  webhookEndpoint WebhookEndpoint?
 }
 
 model Membership {
@@ -33,10 +34,8 @@ model Membership {
   userId String
   orgId  String
   role   String @default("MEMBER")
-
   user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
   @@unique([userId, orgId])
 }
 
@@ -48,7 +47,6 @@ model Plan {
   interval   String  @default("month")
   features   String?
   isActive   Boolean @default(true)
-
   subscriptions Subscription[]
 }
 
@@ -60,7 +58,6 @@ model Subscription {
   currentPeriodStart DateTime @default(now())
   currentPeriodEnd   DateTime
   createdAt          DateTime @default(now())
-
   org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   plan     Plan         @relation(fields: [planId], references: [id])
   invoices Invoice[]
@@ -76,7 +73,62 @@ model Invoice {
   currency       String    @default("PKR")
   paidAt         DateTime?
   createdAt      DateTime  @default(now())
-
   org          Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
   subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  keyHash   String   @unique
+  prefix    String
+  mode      String   @default("test")
+  lastUsed  DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id             String   @id @default(cuid())
+  orgId          String
+  apiKeyId       String?
+  amount         Int
+  currency       String   @default("PKR")
+  status         String   @default("pending")
+  method         String
+  providerRef    String?
+  customerEmail  String?
+  metadata       String?
+  idempotencyKey String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  orgId     String   @unique
+  url       String
+  secret    String
+  events    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model WebhookEvent {
+  id           String    @id @default(cuid())
+  orgId        String
+  paymentId    String?
+  type         String
+  payload      String
+  url          String
+  status       String    @default("pending")
+  attempts     Int       @default(0)
+  lastError    String?
+  nextRetryAt  DateTime?
+  deliveredAt  DateTime?
+  createdAt    DateTime  @default(now())
 }

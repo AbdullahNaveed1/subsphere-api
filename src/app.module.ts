@@ -7,10 +7,18 @@ import { PlansModule } from './plans/plans.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { CommonModule } from './common/common.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
+import { PaymentsModule } from './payments/payments.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    CommonModule,
+    ApiKeysModule,
+    PaymentsModule,
+    WebhooksModule,
     PrismaModule,
     AuthModule,
     OrgsModule,
@@ -21,3 +29,5 @@ import { DashboardModule } from './dashboard/dashboard.module';
   ],
 })
 export class AppModule {}
+
+
