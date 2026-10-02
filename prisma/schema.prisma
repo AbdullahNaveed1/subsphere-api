@@ -98,6 +98,7 @@ model Payment {
   currency       String   @default("PKR")
   status         String   @default("pending")
   method         String
+  provider       String   @default("mock")
   providerRef    String?
   customerEmail  String?
   metadata       String?

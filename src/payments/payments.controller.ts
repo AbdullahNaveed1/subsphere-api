@@ -9,6 +9,7 @@ class CreatePaymentDto {
   @IsInt() @Min(1) amount!: number;
   @IsString() method!: string;
   @IsOptional() @IsString() currency?: string;
+  @IsOptional() @IsString() provider?: string;
   @IsOptional() @IsString() customerEmail?: string;
   @IsOptional() @IsObject() metadata?: any;
 }
