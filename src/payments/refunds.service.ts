@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { ProviderFactory } from './providers/provider.factory';
@@ -21,6 +21,12 @@ export class RefundsService {
 
     const refund = await this.prisma.refund.create({ data: { orgId, paymentId, amount, reason, status: 'pending' } });
     await this.webhooks.dispatch(orgId, 'refund.created', refund);
+
+    if (payment.provider === 'test') {
+      const updated = await this.prisma.refund.update({ where: { id: refund.id }, data: { status: 'succeeded', providerRef: 'test_ref_' + Date.now() } });
+      await this.webhooks.dispatch(orgId, 'refund.succeeded', updated);
+      return updated;
+    }
 
     if (payment.providerRef) {
       const provider = this.providers.get(payment.provider);
