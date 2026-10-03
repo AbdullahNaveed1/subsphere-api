@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { createHmac, randomBytes } from 'crypto';
 import axios from 'axios';
@@ -32,6 +32,8 @@ export class WebhooksService {
     this.deliver(event.id, endpoint.url, endpoint.secret, event.payload).catch(() => {});
     return { ok: true, eventId: event.id };
   }
+
+  async retryDelivery(eventId: string, url: string, secret: string, payload: string) { return this.deliver(eventId, url, secret, payload); }
 
   private async deliver(eventId: string, url: string, secret: string, payload: string) {
     const signature = createHmac('sha256', secret).update(payload).digest('hex');
