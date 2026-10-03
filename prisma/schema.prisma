@@ -179,3 +179,16 @@ model CheckoutSession {
   completedAt DateTime?
   createdAt   DateTime  @default(now())
 }
+
+model PaymentLink {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  orgId       String
+  amount      Int
+  currency    String    @default("PKR")
+  description String?
+  method      String    @default("card")
+  active      Boolean   @default(true)
+  timesUsed   Int       @default(0)
+  createdAt   DateTime  @default(now())
+}
