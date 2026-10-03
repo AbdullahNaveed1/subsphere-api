@@ -1,6 +1,6 @@
-﻿import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PaymentProvider, CreatePaymentParams, PaymentResult } from './provider.interface';
+import { PaymentProvider, CreatePaymentParams, PaymentResult, RefundResult } from './provider.interface';
 
 const { Safepay } = require('@sfpy/node-sdk');
 
@@ -45,5 +45,19 @@ export class SafepayProvider implements PaymentProvider {
     this.logger.log('Safepay token: ' + token);
     this.logger.log('Checkout URL: ' + checkoutUrl);
     return { providerRef: token, status: 'pending', checkoutUrl };
+  }
+
+  async refund(providerRef: string, amount: number, reason?: string): Promise<RefundResult> {
+    if (!this.safepay) {
+      this.logger.warn('Safepay keys missing - mock refund');
+      return { providerRef: 'mock_refund_' + Date.now(), status: 'succeeded' };
+    }
+    try {
+      const res = await this.safepay.payments.refund({ tracker: providerRef, amount, reason });
+      return { providerRef: res?.refund_id || providerRef, status: 'succeeded', raw: res };
+    } catch (err: any) {
+      this.logger.error('Safepay refund failed: ' + (err?.message || 'unknown'));
+      return { providerRef, status: 'failed', raw: err };
+    }
   }
 }

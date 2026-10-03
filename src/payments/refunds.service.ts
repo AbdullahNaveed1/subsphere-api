@@ -1,12 +1,14 @@
 ﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { ProviderFactory } from './providers/provider.factory';
 
 @Injectable()
 export class RefundsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly webhooks: WebhooksService,
+    private readonly providers: ProviderFactory,
   ) {}
 
   async create(orgId: string, paymentId: string, amount: number, reason?: string) {
@@ -16,8 +18,19 @@ export class RefundsService {
     const existing = await this.prisma.refund.findMany({ where: { paymentId, status: { in: ['pending', 'succeeded'] } } });
     const alreadyRefunded = existing.reduce((s, r) => s + r.amount, 0);
     if (alreadyRefunded + amount > payment.amount) throw new BadRequestException('Refund exceeds payment amount');
+
     const refund = await this.prisma.refund.create({ data: { orgId, paymentId, amount, reason, status: 'pending' } });
     await this.webhooks.dispatch(orgId, 'refund.created', refund);
+
+    if (payment.providerRef) {
+      const provider = this.providers.get(payment.provider);
+      if (provider.refund) {
+        const r = await provider.refund(payment.providerRef, amount, reason);
+        const updated = await this.prisma.refund.update({ where: { id: refund.id }, data: { status: r.status, providerRef: r.providerRef } });
+        await this.webhooks.dispatch(orgId, 'refund.' + r.status, updated);
+        return updated;
+      }
+    }
     return refund;
   }
 

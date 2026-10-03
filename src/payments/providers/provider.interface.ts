@@ -13,7 +13,14 @@ export interface PaymentResult {
   raw?: any;
 }
 
+export interface RefundResult {
+  providerRef: string;
+  status: 'pending' | 'succeeded' | 'failed';
+  raw?: any;
+}
+
 export interface PaymentProvider {
   readonly name: string;
   createPayment(params: CreatePaymentParams): Promise<PaymentResult>;
+  refund?(providerRef: string, amount: number, reason?: string): Promise<RefundResult>;
 }
