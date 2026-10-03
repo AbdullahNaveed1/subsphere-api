@@ -20,7 +20,7 @@ export class ApiKeyGuard implements CanActivate {
       if (!ok) throw new ForbiddenException('API key missing required scope: ' + required.join(','));
     }
     await this.prisma.apiKey.update({ where: { id: key.id }, data: { lastUsed: new Date() } });
-    req.org = { id: key.orgId, role: 'API' };
+    req.org = { id: key.orgId, role: 'API', mode: key.mode === 'live' ? 'live' : 'test' };
     return true;
   }
 }

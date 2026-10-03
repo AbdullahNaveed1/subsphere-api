@@ -3,6 +3,7 @@
 export interface OrgContext {
   id: string;
   role: string;
+  mode?: 'test' | 'live';
 }
 
 export const CurrentOrg = createParamDecorator(

@@ -1,6 +1,6 @@
 ﻿import { Controller, Get, Post, Body, Param, Headers, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiHeader } from '@nestjs/swagger';
-import { IsInt, IsString, IsOptional, IsObject, Min } from 'class-validator';
+import { IsInt, IsString, IsOptional, IsObject, IsIn, Min } from 'class-validator';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -16,6 +16,7 @@ class CreatePaymentDto {
   @IsOptional() @IsString() provider?: string;
   @IsOptional() @IsString() customerEmail?: string;
   @IsOptional() @IsObject() metadata?: any;
+  @IsOptional() @IsIn(['succeeded', 'failed', 'pending']) simulate?: 'succeeded' | 'failed' | 'pending';
 }
 
 @ApiTags('payments')
@@ -26,7 +27,7 @@ export class PaymentsController {
 
   @Post() @UseGuards(RateLimitGuard, ApiKeyGuard) @Scopes('payments:write')
   create(@CurrentOrg() org: OrgContext, @Body() dto: CreatePaymentDto, @Headers('idempotency-key') idem?: string) {
-    return this.payments.create(org.id, { ...dto, idempotencyKey: idem });
+    return this.payments.create(org.id, { ...dto, idempotencyKey: idem }, org.mode);
   }
 
   @Get() @UseGuards(RateLimitGuard, ApiKeyGuard) @Scopes('payments:read')

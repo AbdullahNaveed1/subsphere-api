@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { ProviderFactory } from './providers/provider.factory';
@@ -12,11 +12,28 @@ export class PaymentsService {
     private readonly providers: ProviderFactory,
   ) {}
 
-  async create(orgId: string, dto: any) {
+  async create(orgId: string, dto: any, mode?: 'test' | 'live') {
     if (dto.idempotencyKey) {
       const existing = await this.prisma.payment.findUnique({ where: { idempotencyKey: dto.idempotencyKey } });
       if (existing) return existing;
     }
+
+    if (dto.simulate) {
+      if (mode !== 'test') throw new ForbiddenException('simulate only allowed with sk_test_ keys');
+      const allowed = ['succeeded', 'failed', 'pending'];
+      if (!allowed.includes(dto.simulate)) throw new BadRequestException('simulate must be one of: ' + allowed.join(', '));
+      const payment = await this.prisma.payment.create({
+        data: {
+          orgId, amount: dto.amount, currency: dto.currency || 'PKR', method: dto.method,
+          provider: 'test', status: dto.simulate, providerRef: 'test_' + Date.now(),
+          customerEmail: dto.customerEmail, metadata: dto.metadata ? JSON.stringify(dto.metadata) : null,
+          idempotencyKey: dto.idempotencyKey,
+        },
+      });
+      await this.webhooks.dispatch(orgId, 'payment.' + payment.status, payment);
+      return payment;
+    }
+
     const providerName = dto.provider || 'safepay';
     const provider = this.providers.get(providerName);
     let result;
