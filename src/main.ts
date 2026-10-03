@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
 async function bootstrap() {
   // rawBody: true is needed later for Stripe webhook signature verification.
@@ -11,6 +12,9 @@ async function bootstrap() {
 
   // Every route is now prefixed with /api
   app.setGlobalPrefix('api');
+
+  const reqId = new RequestIdMiddleware();
+  app.use((req: any, res: any, next: any) => reqId.use(req, res, next));
 
   app.enableCors({
     origin: process.env.WEB_ORIGIN?.split(',') ?? true,

@@ -1,4 +1,4 @@
-﻿import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 function typeFor(status: number): string {
@@ -29,7 +29,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
-    const req = ctx.getRequest<Request>();
+    const req = ctx.getRequest<Request & { id?: string }>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
@@ -58,6 +58,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message,
         ...(details ? { details } : {}),
         path: req.url,
+        requestId: req.id,
       },
     });
   }
