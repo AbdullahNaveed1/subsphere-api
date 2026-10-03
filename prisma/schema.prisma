@@ -164,3 +164,18 @@ model Customer {
   updatedAt DateTime @updatedAt
   @@unique([orgId, email])
 }
+
+model CheckoutSession {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  orgId       String
+  paymentId   String
+  amount      Int
+  currency    String    @default("PKR")
+  status      String    @default("open")
+  successUrl  String?
+  cancelUrl   String?
+  expiresAt   DateTime
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+}
