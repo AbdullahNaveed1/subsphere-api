@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { ProviderFactory } from './providers/provider.factory';
+import { LedgerService } from '../ledger/ledger.service';
 
 @Injectable()
 export class RefundsService {
@@ -9,6 +10,7 @@ export class RefundsService {
     private readonly prisma: PrismaService,
     private readonly webhooks: WebhooksService,
     private readonly providers: ProviderFactory,
+    private readonly ledger: LedgerService,
   ) {}
 
   async create(orgId: string, paymentId: string, amount: number, reason?: string) {
@@ -25,6 +27,7 @@ export class RefundsService {
     if (payment.provider === 'test') {
       const updated = await this.prisma.refund.update({ where: { id: refund.id }, data: { status: 'succeeded', providerRef: 'test_ref_' + Date.now() } });
       await this.webhooks.dispatch(orgId, 'refund.succeeded', updated);
+      await this.ledger.record(orgId, 'refund', -amount, updated.id, 'Refund ' + updated.id);
       return updated;
     }
 

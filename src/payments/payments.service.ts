@@ -1,7 +1,8 @@
-﻿import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { ProviderFactory } from './providers/provider.factory';
+import { LedgerService } from '../ledger/ledger.service';
 import axios from 'axios';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly webhooks: WebhooksService,
     private readonly providers: ProviderFactory,
+    private readonly ledger: LedgerService,
   ) {}
 
   async create(orgId: string, dto: any, mode?: 'test' | 'live') {
@@ -31,6 +33,7 @@ export class PaymentsService {
         },
       });
       await this.webhooks.dispatch(orgId, 'payment.' + payment.status, payment);
+      if (payment.status === 'succeeded') await this.ledger.record(orgId, 'payment', payment.amount, payment.id, 'Payment ' + payment.id);
       return payment;
     }
 

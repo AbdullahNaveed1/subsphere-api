@@ -206,3 +206,15 @@ model Coupon {
   createdAt      DateTime  @default(now())
   @@unique([orgId, code])
 }
+
+model LedgerEntry {
+  id           String   @id @default(cuid())
+  orgId        String
+  type         String
+  amountCents  Int
+  balanceAfter Int
+  reference    String?
+  description  String?
+  createdAt    DateTime @default(now())
+  @@index([orgId, createdAt])
+}
