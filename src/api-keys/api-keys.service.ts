@@ -5,15 +5,15 @@ import { createHash, randomBytes } from 'crypto';
 @Injectable()
 export class ApiKeysService {
   constructor(private readonly prisma: PrismaService) {}
-  async create(orgId: string, name: string, mode: 'test' | 'live' = 'test') {
+  async create(orgId: string, name: string, mode: 'test' | 'live' = 'test', scopes: string[] = ['*']) {
     const raw = 'sk_' + mode + '_' + randomBytes(24).toString('hex');
     const keyHash = createHash('sha256').update(raw).digest('hex');
     const prefix = raw.slice(0, 12) + '...';
-    const key = await this.prisma.apiKey.create({ data: { orgId, name, keyHash, prefix, mode } });
-    return { id: key.id, name: key.name, prefix: key.prefix, mode: key.mode, createdAt: key.createdAt, rawKey: raw };
+    const key = await this.prisma.apiKey.create({ data: { orgId, name, keyHash, prefix, mode, scopes: scopes.join(',') } });
+    return { id: key.id, name: key.name, prefix: key.prefix, mode: key.mode, scopes: key.scopes, createdAt: key.createdAt, rawKey: raw };
   }
   async list(orgId: string) {
-    return this.prisma.apiKey.findMany({ where: { orgId, revokedAt: null }, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, prefix: true, mode: true, lastUsed: true, createdAt: true } });
+    return this.prisma.apiKey.findMany({ where: { orgId, revokedAt: null }, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, prefix: true, mode: true, scopes: true, lastUsed: true, createdAt: true } });
   }
   async revoke(orgId: string, id: string) {
     const key = await this.prisma.apiKey.findFirst({ where: { id, orgId } });

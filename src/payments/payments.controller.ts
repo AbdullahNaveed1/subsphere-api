@@ -2,7 +2,11 @@
 import { ApiTags, ApiHeader } from '@nestjs/swagger';
 import { IsInt, IsString, IsOptional, IsObject, Min } from 'class-validator';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
+import { RateLimitGuard } from '../common/guards/rate-limit.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { TenantGuard } from '../common/guards/tenant.guard';
 import { CurrentOrg, OrgContext } from '../common/decorators/current-org.decorator';
+import { Scopes } from '../common/decorators/scopes.decorator';
 import { PaymentsService } from './payments.service';
 
 class CreatePaymentDto {
@@ -16,11 +20,21 @@ class CreatePaymentDto {
 
 @ApiTags('payments')
 @ApiHeader({ name: 'X-API-Key', required: true })
-@UseGuards(ApiKeyGuard)
 @Controller('v1/payments')
 export class PaymentsController {
   constructor(private readonly payments: PaymentsService) {}
-  @Post() create(@CurrentOrg() org: OrgContext, @Body() dto: CreatePaymentDto, @Headers('idempotency-key') idem?: string) { return this.payments.create(org.id, { ...dto, idempotencyKey: idem }); }
-  @Get() list(@CurrentOrg() org: OrgContext) { return this.payments.list(org.id); }
-  @Get(':id') get(@CurrentOrg() org: OrgContext, @Param('id') id: string) { return this.payments.get(org.id, id); }
+
+  @Post() @UseGuards(RateLimitGuard, ApiKeyGuard) @Scopes('payments:write')
+  create(@CurrentOrg() org: OrgContext, @Body() dto: CreatePaymentDto, @Headers('idempotency-key') idem?: string) {
+    return this.payments.create(org.id, { ...dto, idempotencyKey: idem });
+  }
+
+  @Get() @UseGuards(RateLimitGuard, ApiKeyGuard) @Scopes('payments:read')
+  list(@CurrentOrg() org: OrgContext) { return this.payments.list(org.id); }
+
+  @Post('sync') @UseGuards(JwtAuthGuard, TenantGuard)
+  sync(@CurrentOrg() org: OrgContext) { return this.payments.syncAll(org.id); }
+
+  @Get(':id') @UseGuards(RateLimitGuard, ApiKeyGuard) @Scopes('payments:read')
+  get(@CurrentOrg() org: OrgContext, @Param('id') id: string) { return this.payments.get(org.id, id); }
 }
