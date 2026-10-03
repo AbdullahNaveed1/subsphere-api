@@ -1,23 +1,34 @@
-﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomBytes } from 'crypto';
+import { CouponsService } from '../coupons/coupons.service';
 
 const TTL_MS = 30 * 60 * 1000;
 
 @Injectable()
 export class CheckoutService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly coupons: CouponsService,
+  ) {}
 
-  async create(orgId: string, paymentId: string, successUrl?: string, cancelUrl?: string) {
+  async create(orgId: string, paymentId: string, successUrl?: string, cancelUrl?: string, couponCode?: string) {
     const payment = await this.prisma.payment.findFirst({ where: { id: paymentId, orgId } });
     if (!payment) throw new NotFoundException('Payment not found');
     if (payment.status !== 'pending') throw new BadRequestException('Only pending payments can be checked out');
+
+    let finalAmount = payment.amount;
+    if (couponCode) {
+      const v = await this.coupons.validate(orgId, couponCode, payment.amount);
+      finalAmount = v.finalCents;
+      await this.coupons.redeem(v.coupon.id);
+    }
 
     const token = randomBytes(24).toString('hex');
     const session = await this.prisma.checkoutSession.create({
       data: {
         token, orgId, paymentId,
-        amount: payment.amount, currency: payment.currency,
+        amount: finalAmount, currency: payment.currency,
         status: 'open',
         successUrl: successUrl || null,
         cancelUrl: cancelUrl || null,

@@ -14,6 +14,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { CustomersModule } from './customers/customers.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { PaymentLinksModule } from './payment-links/payment-links.module';
+import { CouponsModule } from './coupons/coupons.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PaymentLinksModule } from './payment-links/payment-links.module';
     CustomersModule,
     CheckoutModule,
     PaymentLinksModule,
+    CouponsModule,
     PrismaModule,
     AuthModule,
     OrgsModule,

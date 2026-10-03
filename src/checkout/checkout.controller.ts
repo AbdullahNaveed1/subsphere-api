@@ -22,7 +22,7 @@ export class CheckoutController {
 
   @Post() @Scopes('payments:write')
   create(@CurrentOrg() org: OrgContext, @Body() dto: CreateSessionDto) {
-    return this.checkout.create(org.id, dto.paymentId, dto.successUrl, dto.cancelUrl);
+    return this.checkout.create(org.id, dto.paymentId, dto.successUrl, dto.cancelUrl, dto.couponCode);
   }
 
   @Get(':token') @Scopes('payments:read')
