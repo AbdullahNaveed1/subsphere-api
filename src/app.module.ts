@@ -11,6 +11,7 @@ import { CommonModule } from './common/common.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { PaymentsModule } from './payments/payments.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     ApiKeysModule,
     PaymentsModule,
     WebhooksModule,
+    CustomersModule,
     PrismaModule,
     AuthModule,
     OrgsModule,
@@ -29,5 +31,3 @@ import { WebhooksModule } from './webhooks/webhooks.module';
   ],
 })
 export class AppModule {}
-
-
