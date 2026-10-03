@@ -16,6 +16,7 @@ import { CheckoutModule } from './checkout/checkout.module';
 import { PaymentLinksModule } from './payment-links/payment-links.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { LedgerModule } from './ledger/ledger.module';
+import { PayoutsModule } from './payouts/payouts.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { LedgerModule } from './ledger/ledger.module';
     PaymentLinksModule,
     CouponsModule,
     LedgerModule,
+    PayoutsModule,
     PrismaModule,
     AuthModule,
     OrgsModule,

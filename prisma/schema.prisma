@@ -218,3 +218,16 @@ model LedgerEntry {
   createdAt    DateTime @default(now())
   @@index([orgId, createdAt])
 }
+
+model Payout {
+  id          String    @id @default(cuid())
+  orgId       String
+  amountCents Int
+  status      String    @default("pending")
+  method      String    @default("raast")
+  destination String
+  reference   String?
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  @@index([orgId, createdAt])
+}
