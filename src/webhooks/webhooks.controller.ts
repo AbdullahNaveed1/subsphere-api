@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { IsString, IsArray } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -21,4 +21,5 @@ export class WebhooksController {
   @Post('endpoint') set(@CurrentOrg() org: OrgContext, @Body() dto: SetEndpointDto) { return this.webhooks.setEndpoint(org.id, dto.url, dto.events); }
   @Get('endpoint') get(@CurrentOrg() org: OrgContext) { return this.webhooks.getEndpoint(org.id); }
   @Get('events') events(@CurrentOrg() org: OrgContext) { return this.webhooks.listEvents(org.id); }
+  @Post('events/:id/replay') replay(@CurrentOrg() org: OrgContext, @Param('id') id: string) { return this.webhooks.replay(org.id, id); }
 }

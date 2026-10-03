@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { createHmac, randomBytes } from 'crypto';
 import axios from 'axios';
@@ -6,11 +6,14 @@ import axios from 'axios';
 @Injectable()
 export class WebhooksService {
   constructor(private readonly prisma: PrismaService) {}
+
   async setEndpoint(orgId: string, url: string, events: string[]) {
     const secret = 'whsec_' + randomBytes(24).toString('hex');
     return this.prisma.webhookEndpoint.upsert({ where: { orgId }, create: { orgId, url, secret, events: events.join(',') }, update: { url, events: events.join(','), isActive: true } });
   }
+
   async getEndpoint(orgId: string) { return this.prisma.webhookEndpoint.findUnique({ where: { orgId } }); }
+
   async dispatch(orgId: string, type: string, data: any) {
     const endpoint = await this.getEndpoint(orgId);
     const payload = JSON.stringify({ type, data, createdAt: new Date().toISOString() });
@@ -19,6 +22,17 @@ export class WebhooksService {
     if (!endpoint.events.split(',').includes(type) && !endpoint.events.includes('*')) return;
     this.deliver(event.id, endpoint.url, endpoint.secret, payload).catch(() => {});
   }
+
+  async replay(orgId: string, eventId: string) {
+    const event = await this.prisma.webhookEvent.findFirst({ where: { id: eventId, orgId } });
+    if (!event) throw new NotFoundException('Event not found');
+    const endpoint = await this.getEndpoint(orgId);
+    if (!endpoint) throw new NotFoundException('No webhook endpoint configured');
+    await this.prisma.webhookEvent.update({ where: { id: event.id }, data: { status: 'pending', attempts: 0, lastError: null, nextRetryAt: null } });
+    this.deliver(event.id, endpoint.url, endpoint.secret, event.payload).catch(() => {});
+    return { ok: true, eventId: event.id };
+  }
+
   private async deliver(eventId: string, url: string, secret: string, payload: string) {
     const signature = createHmac('sha256', secret).update(payload).digest('hex');
     try {
@@ -31,5 +45,6 @@ export class WebhooksService {
       await this.prisma.webhookEvent.update({ where: { id: eventId }, data: { status: attempts >= 4 ? 'failed' : 'pending', attempts: attempts + 1, lastError: (err && err.message && err.message.slice(0, 500)) || 'error', nextRetryAt: new Date(Date.now() + backoffMs) } });
     }
   }
+
   async listEvents(orgId: string) { return this.prisma.webhookEvent.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: 50 }); }
 }
