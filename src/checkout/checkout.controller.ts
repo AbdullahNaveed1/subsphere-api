@@ -11,6 +11,7 @@ class CreateSessionDto {
   @IsString() paymentId!: string;
   @IsOptional() @IsString() successUrl?: string;
   @IsOptional() @IsString() cancelUrl?: string;
+  @IsOptional() @IsString() couponCode?: string;
 }
 
 @ApiTags('checkout')
